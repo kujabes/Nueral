@@ -8,10 +8,6 @@ np.random.seed(0)
 #               [2, 5, -1, 2],
 #               [-1.5, 2.7, 3.3, -0.8]])
 
-# spiral_data(n, m) Creates a "spiral" dataset, with shape (n*m, 2)
-# Can interpret as m sets of n points, each of which spiral from 
-# the origin, forming a tail
-X, y = spiral_data(100, 3)
 
 class Layer_Dense:
     def __init__(self, n_inputs, n_neurons):
@@ -39,15 +35,36 @@ class Activation_Sigmoid:
         f = lambda x:  1/(1 + np.exp(-x))
         self.output = f(inputs)
 
-layer1 = Layer_Dense(2, 5)
-activation1 = Activation_Sigmoid()
+class Activation_Softmax:
+    def forward(self, inputs):
+        # shifting range to (-inf, 0] so domain is from (0, 1] for each batch
+        exp_values = np.exp(inputs - np.max(inputs, axis=1, keepdims=True))
 
-layer1.forward(X)
-activation1.forward(layer1.output)
+        # for each batch, we normalize by their sum
+        # i.e. each row is summed, then normalized by elem/sum(row)
+        probabilities = exp_values / np.sum(exp_values, axis=1, keepdims=True)
+        self.output = probabilities
 
-print(layer1.output)
-print()
-print(activation1.output, activation1.output)
+
+# spiral_data(n, m) Creates a "spiral" dataset, with shape (n*m, 2)
+# Can interpret as m sets of n points, each of which spiral from 
+# the origin, forming a tail
+X, y = spiral_data(samples=100, classes=3)
+
+dense1 = Layer_Dense(2, 3)
+activation1 = Activation_ReLU()
+
+dense2 = Layer_Dense(3, 3)
+activation2 = Activation_Softmax()
+
+dense1.forward(X)
+activation1.forward(dense1.output)
+
+dense2.forward(activation1.output)
+activation2.forward(dense2.output)
+
+print(activation2.output[:5])
+
 
 
 
