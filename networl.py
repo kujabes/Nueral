@@ -1,12 +1,8 @@
 import numpy as np
+import mnist
 import math
-from nnfs.datasets import spiral_data
-
+import matplotlib.pyplot as plt
 np.random.seed(0)
-
-# X = np.array([[1, 2, 3, 2.5],
-#               [2, 5, -1, 2],
-#               [-1.5, 2.7, 3.3, -0.8]])
 
 
 # Implementing layers as objects
@@ -22,11 +18,6 @@ class Layer_Dense:
         # is the input for the 'activation' of the neuron
         self.output = np.matmul(inputs, self.weights) + self.biases
 
-# Rectified Linear Activation Function
-# if input is <= 0, then the input is mapped to 0
-# else the input is mapped to itself. 
-# i.e. x <= 0 -> 0
-#      x > 0 -> x
 class Activation_ReLU:
     def forward(self, inputs):
         self.output = np.maximum(0, inputs)
@@ -68,33 +59,49 @@ class Loss_CategoricalCrossEntropy(Loss):
         negative_log_likelihood = -np.log(correct_confidences)
         return negative_log_likelihood
 
+class SquaredLoss(Loss):
+    def forward(self, y_pred, y_true):
+        ...
 
+class Accuracy:
+    def calculate(self, y_pred, y_true):
+        predictions = np.argmax(y_pred, axis=1)
+        accuracy = np.mean(predictions == y_true)
+        return accuracy
 
+def main():
+    # loading training data
+    images = mnist.test_images()
+    labels = mnist.test_labels()
 
-# spiral_data(n, m) Creates a "spiral" dataset, with shape (n*m, 2)
-# Can interpret as m sets of n points, each of which spiral from 
-# the origin, forming a tail
-X, y = spiral_data(samples=100, classes=3)
+    sample_images = images[:32]
+    sample_labels = labels[:32]
+    num_inputs = sample_images.shape[1]*sample_images.shape[2]
+    input = sample_images.reshape(sample_images.shape[0], num_inputs)
 
-dense1 = Layer_Dense(2, 3)
-activation1 = Activation_ReLU()
+    # initializing network with 1 hidden layer
+    # and 1 output layer
+    layer1 = Layer_Dense(num_inputs, 16)
+    layer2 = Layer_Dense(16, 10)
+    act1 = Activation_ReLU()
+    act2 = Activation_Softmax()
+    loss_function = Loss_CategoricalCrossEntropy()
 
-dense2 = Layer_Dense(3, 3)
-activation2 = Activation_Softmax()
+    # forward pass
+    layer1.forward(input)
+    act1.forward(layer1.output)
 
-dense1.forward(X)
-activation1.forward(dense1.output)
+    layer2.forward(act1.output)
+    act2.forward(layer2.output)
 
-dense2.forward(activation1.output)
-activation2.forward(dense2.output)
+    output = act2.output
+    prediction = np.argmax(output, axis=1)
+    loss = loss_function.calculate(output, sample_labels)
+    
+    print(prediction[:10])
+    print(sample_labels[:10])
+    print(loss)
 
-loss_function = Loss_CategoricalCrossEntropy()
-
-loss = loss_function.calculate(activation2.output, y)
-
-
-print(activation2.output[:5])
-print('Loss: ', loss)
-
-
+if __name__ == '__main__':
+    main()
 
