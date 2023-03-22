@@ -1,14 +1,15 @@
 import numpy as np
 import mnist
-import math
-import matplotlib.pyplot as plt
-np.random.seed(0)
+import pickle
 
+np.random.seed(0)
 
 # Implementing layers as objects
 class Layer_Dense:
     def __init__(self, n_inputs, n_neurons):
         # samples from standard normal distribution (mean = 0, variance = 1)
+        self.weights_shape = [n_inputs, n_neurons]
+        self.biases_shape = n_neurons
         self.weights = 0.1 * np.random.randn(n_inputs, n_neurons)
         self.biases = np.zeros((1, n_neurons))
         
@@ -68,6 +69,27 @@ class Accuracy:
         predictions = np.argmax(y_pred, axis=1)
         accuracy = np.mean(predictions == y_true)
         return accuracy
+    
+def save_weights(layers: list[Layer_Dense], file):
+    weights = []
+    biases = []
+    with open(f'{file}.txt', 'w') as f:
+        for layer in layers:
+            weights.append(layer.weights)
+            biases.append(layer.biases)
+
+        pickle.dump([weights, biases], f)
+    
+            
+
+def load_weights(layers, file):
+    with open(f'{file}.txt', 'r') as f:
+        weights, biases = pickle.load(f)
+
+    for layer, i in enumerate(layers):
+        layer.weights = weights[i]
+        layer.biases = biases[i]
+
 
 def main():
     # loading training data
@@ -77,7 +99,7 @@ def main():
     sample_images = images[:32]
     sample_labels = labels[:32]
     num_inputs = sample_images.shape[1]*sample_images.shape[2]
-    input = sample_images.reshape(sample_images.shape[0], num_inputs)
+    inputs = sample_images.reshape(sample_images.shape[0], num_inputs)
 
     # initializing network with 1 hidden layer
     # and 1 output layer
@@ -87,8 +109,10 @@ def main():
     act2 = Activation_Softmax()
     loss_function = Loss_CategoricalCrossEntropy()
 
+    # load_weights([layer1, layer2], 'test_weights')
+
     # forward pass
-    layer1.forward(input)
+    layer1.forward(inputs)
     act1.forward(layer1.output)
 
     layer2.forward(act1.output)
@@ -97,6 +121,9 @@ def main():
     output = act2.output
     prediction = np.argmax(output, axis=1)
     loss = loss_function.calculate(output, sample_labels)
+
+    layers = [layer1, layer2]
+    save_weights(layers, 'test_weights')
     
     print(prediction[:10])
     print(sample_labels[:10])
